@@ -1,4 +1,5 @@
 import axios from "axios";
+import { jwtDecode } from "jwt-decode";
 
 const API_BASE_URL_PUBLIC = import.meta.env.VITE_API_BASE_URL_PUBLIC;
 const API_BASE_URL_PROTECTED = import.meta.env.VITE_API_BASE_URL_PROTECTED;
@@ -101,6 +102,47 @@ export const refreshToken = async (token) => {
   }
 };
 
+// Token Validate
+export const validateToken = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.error("No token found in localStorage.");
+      return { valid: false, message: "No token available." };
+    }
+
+    // Decode the token
+    const decoded = jwtDecode(token);
+    console.log("Decoded Token:", decoded);
+
+    // Check if the token is expired
+    const currentTime = Date.now() / 1000; // Current time in seconds
+    if (decoded.exp < currentTime) {
+      console.warn("Token has expired.");
+      return { valid: false, message: "Token has expired." };
+    }
+
+    // Example: Check if user has a specific permission
+    if (!decoded.permissions.includes("ACCESS_DASHBOARD")) {
+      console.warn("User does not have dashboard access.");
+      return { valid: false, message: "Insufficient permissions." };
+    }
+
+    // Check if user is active
+    if (!decoded.active) {
+      console.warn("User account is inactive.");
+      return { valid: false, message: "Account is inactive." };
+    }
+
+    // Return valid status with decoded payload
+    return { valid: true, decoded };
+  } catch (error) {
+    console.error("Token validation failed:", error.message);
+    return { valid: false, message: error.message };
+  }
+};
+
+
 // Logout API Call
 export const logout = async () => {
   try {
@@ -151,6 +193,7 @@ export const logout = async () => {
  * @returns {Promise<Object>} - API response
  */
 export const createUser = async (user) => {
+  console.log("Payload sent to backend:", user);
   try {
     const response = await axiosProtected.post("/users", user);
     return response.data;

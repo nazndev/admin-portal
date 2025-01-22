@@ -28,6 +28,8 @@ const UsersList = () => {
   const [error, setError] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false); // State for Create User Modal
+  const [showViewModal, setShowViewModal] = useState(false); // State for View User Modal
+  const [viewUser, setViewUser] = useState(null); // State for selected user details
   const [selectedUser, setSelectedUser] = useState(null);
 
   const loadUsers = async (currentPage) => {
@@ -77,7 +79,6 @@ const UsersList = () => {
     }
   };
 
-
   useEffect(() => {
     loadUsers(page);
   }, [page]);
@@ -122,9 +123,7 @@ const UsersList = () => {
                       <CButton
                         color="info"
                         size="sm"
-                        onClick={() =>
-                          alert(`Viewing user: ${user.username}`)
-                        }
+                        onClick={() => handleViewUser(user.id)}
                       >
                         View
                       </CButton>{" "}
@@ -233,8 +232,6 @@ const UsersList = () => {
           </CButton>
         </CModalFooter>
       </CModal>
-
-
     </CCard>
   );
 };

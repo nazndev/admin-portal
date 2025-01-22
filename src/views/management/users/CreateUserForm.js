@@ -71,6 +71,8 @@ const CreateUserForm = ({ onUserCreated }) => {
       return;
     }
 
+    console.log("Password sent to backend:", formData.password); 
+
     try {
       const newUser = await createUser(formData); // API call
       setSuccess("User created successfully.");

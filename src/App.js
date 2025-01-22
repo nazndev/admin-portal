@@ -10,87 +10,56 @@ const Register = React.lazy(() => import("./views/pages/register/Register"));
 const Page404 = React.lazy(() => import("./views/pages/page404/Page404"));
 const Page500 = React.lazy(() => import("./views/pages/page500/Page500"));
 
+const checkAuth = () => {
+  const token = localStorage.getItem("token");
+  if (!token) {
+    return false;
+  }
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const payload = JSON.parse(atob(base64));
+    return Date.now() < payload.exp * 1000;
+  } catch (error) {
+    console.error("Error decoding token:", error);
+    return false;
+  }
+};
+
+
+
 const App = () => {
   const { isColorModeSet, setColorMode } = useColorModes("coreui-free-react-admin-template-theme");
 
-  const isAuthenticated = (() => {
-    const token = localStorage.getItem("token");
-    const roles = localStorage.getItem("roles");
-    const permissions = localStorage.getItem("permissions");
-  
-    if (!token || !roles || !permissions) {
-      console.warn("Authentication failed: Missing token, roles, or permissions");
-      return false;
-    }
-  
-    try {
-      const base64Url = token.split(".")[1];
-      const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-      const payload = JSON.parse(atob(base64));
-      const isExpired = Date.now() >= payload.exp * 1000;
-      return !isExpired;
-    } catch (error) {
-      console.error("Token decoding failed:", error);
-      return false;
-    }
-  })();
-  
-  
+  const isAuthenticated = checkAuth();
 
   useEffect(() => {
-    // Handle theme initialization
-    const urlParams = new URLSearchParams(window.location.href.split("?")[1]);
-    const theme = urlParams.get("theme") && urlParams.get("theme").match(/^[A-Za-z0-9\s]+/)[0];
-    if (theme) {
-      setColorMode(theme);
-    }
-
-    if (!isColorModeSet()) {
-      setColorMode("light"); // Default theme
-    }
-
-    // Handle missing authentication details
-    const token = localStorage.getItem("token");
-    const roles = localStorage.getItem("roles");
-    const permissions = localStorage.getItem("permissions");
-
-    if (!token || !roles || !permissions) {
-      // Redirect to login if any required data is missing
+    if (!isAuthenticated && window.location.hash !== "#/login") {
       window.location.href = "/#/login";
     }
 
-    // Listen for logout events (localStorage change)
-    const handleLogout = () => {
+    const handleStorageChange = () => {
       const storedToken = localStorage.getItem("token");
-      if (!storedToken) {
+      if (!storedToken && window.location.hash !== "#/login") {
         window.location.href = "/#/login";
       }
     };
 
-    window.addEventListener("storage", handleLogout);
+    window.addEventListener("storage", handleStorageChange);
 
     return () => {
-      window.removeEventListener("storage", handleLogout);
+      window.removeEventListener("storage", handleStorageChange);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
 
   return (
     <HashRouter>
-      <Suspense
-        fallback={
-          <div className="pt-3 text-center">
-            <CSpinner color="primary" variant="grow" />
-          </div>
-        }
-      >
+      <Suspense fallback={<CSpinner color="primary" variant="grow" />}>
         <Routes>
-          {/* Public Routes */}
           <Route path="/login" name="Login Page" element={<Login />} />
           <Route path="/register" name="Register Page" element={<Register />} />
           <Route path="/404" name="Page 404" element={<Page404 />} />
           <Route path="/500" name="Page 500" element={<Page500 />} />
-
-          {/* Protected Routes */}
           <Route
             path="*"
             name="Home"
@@ -107,5 +76,6 @@ const App = () => {
     </HashRouter>
   );
 };
+
 
 export default App;
